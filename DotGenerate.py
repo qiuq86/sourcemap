@@ -12,8 +12,9 @@ import sys
 class Node (object):
     def __init__(self,obj):
         attr = dir(obj)
-        self.funclist = []
+        self.rewritefunclist = []
         self.attrlist = []
+        self.addedmethod = []
         f = lambda x:Node(x)
         ## if len(obj.__bases__) == 0 :
         ##     self.fathers = []
@@ -24,21 +25,24 @@ class Node (object):
         ##     self.fathers =map(obj.__bases__,f)
         for x in attr :
             if type(getattr(obj,x)) == types.MethodType :
-                self.funclist.append(x)
+                fathermethod = [getattr(i,x,False) for i in obj.__bases__]
+                if fathermethod == [False]*len(fathermethod) :
+                    self.addedmethod.append(x)
+                elif not getattr(obj,x) in fathermethod :
+                    
+                    self.rewritefunclist.append(x)
+
+                else  :
+                    pass
+                
 
             else :
                 self.attrlist.append(x)
         self.title = obj.__name__
-    def label(self):
-        
-        
-        #print '-----------------------------------------------------------------------------'
-        tmp = self.title+'\\n\\n\\n'+'attributes:\\n\\n'+''.join([x+'\\n' for x in self.attrlist])+'\\n\\n\\nmethods:\\n\\n'+''.join([x+'\\n' for x in self.funclist])
-        #print tmp
-        return tmp
 
 
 class dotoutput(object) :
+    """a class translate structure to dot source"""
     head = """digraph G {
 
         graph [
@@ -56,17 +60,24 @@ class dotoutput(object) :
      edge  [ fontname="simyou.ttf"];"""
 
     def __init__(self,module,nodes,arrows):
+
         self.nodes = nodes
         self.arrows = arrows
         self.head = dotoutput.head%module.__name__
+    def label(self,node):
         
+
+        tmp = node.title+'\\n\\n\\n'+'attributes:\\n\\n'+''.join([x+'\\n' for x in node.attrlist])+'\\n\\n\\nnewlyadded:\\n\\n'+''.join([x+'\\n' for x in node.addedmethod])+'\\n\\n'+ 'rewritedmethod:\\n\\n'+''.join([x+'\\n' for x in node.rewritefunclist])
+        #print tmp
+        return tmp
+
 
     def out(self):
         print self.head
         #print '----------------------',self.nodes
         for i in self.nodes  :
             print '"%s"[\nstyle=filled,\n'%i.title
-            print 'label="%s"\n'%i.label()
+            print 'label="%s"\n'%self.label(i)
             print 'color="#eecc80"\n];'
         for i in self.arrows :
             if not i[1] == ():
@@ -79,12 +90,10 @@ def main(file):
     module = __import__(file)
     nodes =[]
     for i in dir(module) :
-        #print i
         lei = getattr(module,i)
 
         if type(lei) == types.ClassType :
-            #print lei.__name__
-            #print 'hh'
+
             nodes.append(Node(lei))
     arrows = []
     for i in nodes :
