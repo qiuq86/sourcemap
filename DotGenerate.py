@@ -6,7 +6,7 @@
 import re
 import types
 import sys
-
+import os
 
 
 class Node (object):
@@ -59,48 +59,59 @@ class dotoutput(object) :
      ];
      edge  [ fontname="simyou.ttf"];"""
 
-    def __init__(self,module,nodes,arrows):
+    def __init__(self,module,nodes):
 
         self.nodes = nodes
-        self.arrows = arrows
+        #self.arrows = arrows
         self.head = dotoutput.head%module.__name__
     def label(self,node):
         
 
-        tmp = node.title+'\\n\\n\\n'+'attributes:\\n\\n'+''.join([x+'\\n' for x in node.attrlist])+'\\n\\n\\nnewlyadded:\\n\\n'+''.join([x+'\\n' for x in node.addedmethod])+'\\n\\n'+ 'rewritedmethod:\\n\\n'+''.join([x+'\\n' for x in node.rewritefunclist])
+        tmp = node.title+'\\n\\n\\n'+'<f0>attributes:\\n\\n'+''.join([x+'\\n' for x in node.attrlist])+'|<f1>newlyadded:\\n\\n'+''.join([x+'\\n' for x in node.addedmethod])+'\\n\\n'+ 'rewritedmethod:\\n\\n'+''.join([x+'\\n' for x in node.rewritefunclist])
         #print tmp
         return tmp
 
 
-    def out(self):
+    def out(self,output=False):
+        if output :
+            sys.stdout = open(output,'w')
         print self.head
         #print '----------------------',self.nodes
         for i in self.nodes  :
             print '"%s"[\nstyle=filled,\n'%i.title
+            print 'shape=record,\n'
             print 'label="%s"\n'%self.label(i)
+   
             print 'color="#eecc80"\n];'
-        for i in self.arrows :
-            if not i[1] == ():
-                for j in i[1]:
-                    print '  %s->%s;\n'%(i[0].title,j.title)
+        for i in self.nodes :
+            if not i.fathers == []:
+                for j in i.fathers:
+                    print '  %s->%s;\n'%(j.title,i.title)
             
         print '}'
-        
-def main(file):
-    module = __import__(file)
-    nodes =[]
-    for i in dir(module) :
-        lei = getattr(module,i)
 
-        if type(lei) == types.ClassType :
-
-            nodes.append(Node(lei))
-    arrows = []
-    for i in nodes :
-        arrows.append((i,i.fathers))
         
-    return module,nodes,arrows
+        
+        
+class Map(object):
+    def __init__(self,module,eager=False):
+        self.module = __import__(module)
+        self.nodes =[]
+        for i in dir(module) :
+            lei = getattr(module,i)
+
+            if type(lei) == types.ClassType :
+
+                self.nodes.append(Node(lei))
+        if eager :
+            def f(node) :
+                return [node]+[node.fathers]
+            for i in self.nodes :
+                self.nodes += f(i)
+
+            self.nodes = list(set(self.nodes))
+
 
 if __name__=='__main__' :
-    x=main(sys.argv[1])
-    dotoutput(x[0],x[1],x[2]).out()
+    x=Map(sys.argv[1],True)
+    dotoutput(x.module,x.nodes).out('te')
