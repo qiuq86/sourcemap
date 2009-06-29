@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pyth
 #-*- coding: utf-8 -*-
 # Filename:
 # Author:    E-mail:qingant@gmail.com
@@ -7,7 +7,6 @@ import re
 import types
 import sys
 import os
-
 
 class Node (object):
     def __init__(self,obj):
@@ -94,24 +93,18 @@ class dotoutput(object) :
         
         
 class Map(object):
-    def __init__(self,module,eager=False):
+    def __init__(self,module):
         self.module = __import__(module)
         self.nodes =[]
-        for i in dir(module) :
-            lei = getattr(module,i)
+        for i in dir(self.module) :
+            lei = getattr(self.module,i)
 
             if type(lei) == types.ClassType :
-
                 self.nodes.append(Node(lei))
-        if eager :
-            def f(node) :
-                return [node]+[node.fathers]
-            for i in self.nodes :
-                self.nodes += f(i)
 
-            self.nodes = list(set(self.nodes))
+
 
 
 if __name__=='__main__' :
-    x=Map(sys.argv[1],True)
-    dotoutput(x.module,x.nodes).out('te')
+    x=Map(sys.argv[1])
+    dotoutput(x.module,x.nodes).out()
